@@ -8,6 +8,11 @@
     </canvas>
 </body>
 <script>
+
+// c.addEventListener("mousedown", handleMouseDown);
+// c.addEventListener("mouseUp", handleMouseUp);
+
+
 var c = document.getElementById("canvas");
 var ctx = c.getContext("2d");
 
@@ -19,14 +24,34 @@ for(var y =0; y <= 500; y+=50){
     ctx.moveTo(0, y);
     ctx.lineTo(500, y);
 }
-// ctx.moveTo(0, 0);
-// ctx.lineTo(100, 100);
 ctx.stroke();
 
-ctx.beginPath();
-ctx.moveTo(130, 110);
-ctx.lineTo(300, 500)
-ctx.stroke();
+c.addEventListener("mousedown", handleMouseDown);
+c.addEventListener("mouseup", handleMouseUp);
+
+function handleMouseDown(event){
+    var x = event.clientX - c.offsetLeft;
+    var y = event.clientY - c.offsetTop;
+    
+    ctx.beginPath();
+    ctx.moveTo(x,y);
+
+    isDown = 1;
+
+}
+function handleMouseUp(event){
+    
+    if(isDown){
+        var x = event.clientX - c.offsetLeft;
+        var y = event.clientY - c.offsetTop;
+        
+        ctx.lineTo(x,y);
+        ctx.stroke();
+
+    }
+
+    isDown =0;
+}
 
 </script>
 </html>
