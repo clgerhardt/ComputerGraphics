@@ -1,0 +1,230 @@
+<HTML>
+    <meta charset="utf-8" />
+    
+    <head></head>
+    
+    <body>
+    
+        <canvas id="canvas" width="500" height="500" style="border: 1px solid black"></canvas>
+    
+        <script>
+            var canvas = document.getElementById("canvas");
+            var context = canvas.getContext("2d");
+    
+            canvas.addEventListener("mousedown", handleMouseDown);
+            canvas.addEventListener("mousemove", handleMouseMove);
+            canvas.addEventListener("mouseup", handleMouseUp);
+            var p0 = {
+                x: 0,
+                y: 0
+            };
+            var p1 = {
+                x: 0,
+                y: 0
+            };
+
+            var isdown = 0;
+
+            display();
+
+            function setPixel(x, y) {
+                context.fillRect(x, y, 1, 1);
+            }
+    
+            function handleMouseUp(event) {
+                isdown = 0;
+                p1.x = event.clientX - canvas.offsetLeft;
+                p1.y = event.clientY - canvas.offsetTop;
+                display();
+            }
+    
+            function handleMouseDown(event) {
+                isdown = 1;
+                p0.x = event.clientX - canvas.offsetLeft;
+                p0.y = event.clientY - canvas.offsetTop;
+                display();
+    
+            }
+
+            function handleMouseMove(event){
+                if (isdown == 0)
+                    return;
+    
+                p1.x = event.clientX - canvas.offsetLeft;
+                p1.y = event.clientY - canvas.offsetTop;
+    
+                display();
+            }
+
+            function bresenham(p0, p1) {
+                var x1 = p0.x;
+                var y1 = p0.y;
+                var x2 = p1.x;
+                var y2 = p1.y;
+
+
+                if (Math.abs(x2 - x1) > Math.abs(y2 - y1)) {
+
+
+                    this_loop = 0;
+                    if (x1 > x2){
+                        this_loop = 1;
+                    }
+
+                    var yi = 1;
+                    if (this_loop == 1){                        
+
+                        var deltaX = x1 - x2;
+                        var deltaY = y1 - y2;
+
+                        if (deltaY > 0){
+                            document.getElementById("quadrant").innerHTML =  'Octant 5';
+                        }
+                        else{
+                            document.getElementById("quadrant").innerHTML =  'Octant 4';
+                        }
+
+                        if (deltaY < 0){
+                            yi = -1;
+                            deltaY = -1*deltaY;
+                        }
+                        var D = 2 * deltaY - deltaX;
+                        var y = y2;
+
+                        for (var x = x2; x <= x1; x++) {
+                            setPixel(x, y);
+                            if( D > 0){
+                                y = y + yi;
+                                D = D - 2*deltaX;
+                            }
+                            D = D + 2*deltaY;
+                        }
+
+                    }
+                    else{
+                        var deltaX = x2 - x1;
+                        var deltaY = y2 - y1;
+                        if (deltaY > 0){
+                            document.getElementById("quadrant").innerHTML =  'Octant 1';
+                        }
+                        else{
+                            document.getElementById("quadrant").innerHTML =  'Octant 8';
+                        }
+
+                        if (deltaY < 0){
+                            yi = -1;
+                            deltaY = -1*deltaY;
+                        }
+                        var D = 2 * deltaY - deltaX;
+                        var y = y1;
+
+                        for (var x = x1; x <= x2; x++) {
+                            setPixel(x, y);
+                            if( D > 0){
+                                y = y + yi;
+                                D = D - 2*deltaX;
+                            }
+                            D = D + 2*deltaY;
+                        }
+
+                    }
+                }
+                else {
+
+                    this_loop = 0;
+                    if (y1 > y2){
+                        this_loop = 1;
+                    }
+                    var xi = 1;
+                    if (this_loop == 1){
+
+                        var deltaX = x1 - x2;
+                        var deltaY = y1 - y2;
+
+                        if (deltaX > 0){
+                            document.getElementById("quadrant").innerHTML =  'Octant 6';
+                        }
+                        else{
+                            document.getElementById("quadrant").innerHTML =  'Octant 7';
+                        }
+
+                        if (deltaX < 0){
+                            xi = -1;
+                            deltaX = -1*deltaX;
+                        }
+                        var D = 2 * deltaX - deltaY;
+                        var x = x2;
+
+                        for (var y = y2; y <= y1; y++) {
+                            setPixel(x, y);
+                            if( D > 0){
+                                x = x + xi;
+                                D = D - 2*deltaY;
+                            }
+                            D = D + 2*deltaX;
+                        }
+
+                    }
+                    else{
+                        var deltaX = x2 - x1;
+                        var deltaY = y2 - y1;
+
+                        if (deltaX < 0){
+                            document.getElementById("quadrant").innerHTML =  'Octant 3';
+                        }
+                        else{
+                            document.getElementById("quadrant").innerHTML =  'Octant 2';
+                        }
+
+                        if (deltaX < 0){
+                            xi = -1;
+                            deltaX = -1*deltaX;
+                        }
+                        var D = 2 * deltaX - deltaY;
+                        var x = x1;
+
+                        for (var y = y1; y <= y2; y++) {
+                            setPixel(x, y);
+                            if( D > 0){
+                                x = x + xi;
+                                D = D - 2*deltaY;
+                            }
+                            D = D + 2*deltaX;
+
+                        }
+                        
+                    }
+
+                        
+                }
+    
+            }
+    
+    
+    
+            function display() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                var dx = p1.x - p0.x;
+                var dy = p1.y - p0.y;
+    
+                context.fillStyle = "#FF0000";
+                context.strokeStyle = "#FF0000";
+    
+                bresenham(p0, p1); //<!-- this should work before you turn in your assignment -->
+    
+                context.fillStyle = "#0000FF";
+                context.strokeStyle = "#0000FF";
+                // this is what your algorithm SHOULD output, comment these when working on the algorithm
+                // context.beginPath();
+                // context.moveTo(p0.x, p0.y);
+                // context.lineTo(p1.x, p1.y);
+                // context.stroke();
+    
+            }
+        </script>
+    
+        <p id='quadrant'></p>
+    
+    </body>
+    
+    </html>

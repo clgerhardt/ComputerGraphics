@@ -1,0 +1,191 @@
+<HTML>
+<meta charset="utf-8" />
+
+<head></head>
+
+<body>
+
+    <canvas id="canvas" width="500" height="500" style="border: 1px solid black"></canvas>
+
+    <script>
+        var canvas = document.getElementById("canvas");
+        var context = canvas.getContext("2d");
+
+        canvas.addEventListener("mousedown", handleMouseDown);
+        canvas.addEventListener("mousemove", handleMouseMove);
+        canvas.addEventListener("mouseup", handleMouseUp);
+
+
+        var p0 = {
+            x: 0,
+            y: 0
+        };
+        var p1 = {
+            x: 0,
+            y: 0
+        };
+
+
+        var isdown = 0;
+
+
+        display();
+
+
+        function setPixel(x, y) {
+            context.fillRect(x, y, 1, 1);
+        }
+
+
+        function handleMouseUp(event) {
+            isdown = 0;
+            p1.x = event.clientX - canvas.offsetLeft;
+            p1.y = event.clientY - canvas.offsetTop;
+            display();
+        }
+
+
+
+        function handleMouseDown(event) {
+            isdown = 1;
+            p0.x = event.clientX - canvas.offsetLeft;
+            p0.y = event.clientY - canvas.offsetTop;
+            display();
+
+        }
+
+
+
+        function handleMouseMove(event)
+
+        {
+            if (isdown == 0)
+                return;
+
+            p1.x = event.clientX - canvas.offsetLeft;
+            p1.y = event.clientY - canvas.offsetTop;
+
+            display();
+        }
+
+
+
+        function bresenham(p0, p1) {
+            var x1 = p0.x;
+            var y1 = p0.y;
+            var x2 = p1.x;
+            var y2 = p1.y;
+
+            var y = y1;
+            var x = x1;
+
+            var deltaX = x2 - x1;
+            var deltaY = y2 - y1;
+
+            var slope = 0;
+
+            document.getElementById("dx").innerHTML = 'deltaY: ' + deltaY + ' - ' + 'detlaX: ' + deltaX + ' = ' + error;
+            // document.getElementById("dy").innerHTML = 'y2: '+ y2 + ' - ' + 'y1: ' + y1 + ' = ' +deltaY;
+
+            var oct = -1;
+            var quadrant = -1;
+            if (Math.abs(deltaX) > Math.abs(deltaY)) {
+                if (deltaX < 0 && deltaY > 0) {
+                    oct = 4;
+                    quadrant = 3;
+                } else if (deltaX < 0 && deltaY < 0) {
+                    oct = 5;
+                    quadrant = 2;
+                } else if (deltaX > 0 && deltaY < 0) {
+                    oct = 8;
+                    quadrant = 1;
+                } else {
+                    oct = 1;
+                    quadrant = 4;
+                }
+                slope = deltaY / deltaX;
+
+            } else {
+                if (deltaX < 0 && deltaY > 0) {
+                    oct = 3;
+                    quadrant = 2;
+                } else if (deltaX < 0 && deltaY < 0) {
+                    oct = 6;
+                    quadrant = 2;
+                } else if (deltaX > 0 && deltaY < 0) {
+                    oct = 7;
+                    quadrant = 1;
+                } else {
+                    oct = 2;
+                    quadrant = 4;
+                }
+                slope = deltaX / deltaY;
+
+            }
+
+            document.getElementById("quadrant").innerHTML = 'Quadrant = ' + quadrant;
+            document.getElementById("octant").innerHTML = 'Octant = ' + oct;
+
+            // document.getElementById("comment").innerHTML = slope + '  ' + 'oct ' + oct;
+
+            if (oct == 1 || oct == 8) {
+                for (var x = x1; x <= x2; x++) {
+                    setPixel(x, y);
+                    y += slope;
+                }
+            } else if (oct == 2 || oct == 3) {
+                for (var y = y1; y <= y2; y++) {
+                    setPixel(x, y);
+                    x += slope;
+                }
+            } else if (oct == 4 || oct == 5) {
+                for (var x = x1; x >= x2; x--) {
+                    setPixel(x, y);
+                    y -= slope;
+                }
+            } else {
+                for (var y = y1; y >= y2; y--) {
+                    setPixel(x, y);
+                    x -= slope;
+                }
+            }
+
+        }
+
+
+
+        function display() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            var dx = p1.x - p0.x;
+            var dy = p1.y - p0.y;
+
+            context.fillStyle = "#FF0000";
+            context.strokeStyle = "#FF0000";
+
+            bresenham(p0, p1); //<!-- this should work before you turn in your assignment -->
+
+            context.fillStyle = "#0000FF";
+            context.strokeStyle = "#0000FF";
+            // this is what your algorithm SHOULD output, comment these when working on the algorithm
+            // context.beginPath();
+            // context.moveTo(p0.x, p0.y);
+            // context.lineTo(p1.x, p1.y);
+            // context.stroke();
+
+        }
+    </script>
+
+    <p id='quadrant'></p>
+    <p id='octant'></p>
+
+    <p id='dx'></p>
+
+    <!-- <p id='dy'></p> -->
+
+    <!-- <p id='comment'></p> -->
+
+
+
+</body>
+
+</html>
