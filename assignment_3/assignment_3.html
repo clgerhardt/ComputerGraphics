@@ -1,0 +1,372 @@
+<HTML>
+    <meta charset="utf-8"/>
+    <head></head>
+    
+    <body>
+    
+    <table>
+    <tr><td>Translation</td></tr>
+    <tr>
+        <td></td><td>t<small>x</small>: </td><td><input type='text' size=1 id='tx' value='0'> <td> 
+        <td></td><td>t<small>y</small>: </td><td><input type='text' size=1 id='ty' value='0'> <td> 
+
+                <!-- <h6 id="t_number">1</h6> -->
+    </tr>
+    
+    <tr><td>Scale</td></tr>
+    <tr>
+        <td></td><td>s<small>x</small>: </td><td><input type='text' size=1 id='sx' value='1'> <td> 
+        <td></td><td>s<small>y</small>: </td><td><input type='text' size=1 id='sy' value='1'> <td> 
+    </tr>
+    
+    <tr><td>Rotation</td></tr>
+    <tr>
+        <td></td><td>theta: </td><td><input type='text' size=1 id='theta' value='0'> <td> 
+    </tr>
+    <tr>
+        <td></td>
+    </tr>
+    <tr>
+            <td> Choose order:</td>
+            <td> <h6>Translate</h6></td><td> <input type="checkbox" id="t" onclick="num(this.id)"></td>     <td> <h6 id="t_num"> </h6></td>
+            <td> <h6>Scale</h6></td><td> <input type="checkbox" id="s" onclick="num(this.id)"></td>       <td> <h6 id="s_num"> </h6></td>
+            <td> <h6>Rotation</h6></td><td> <input type="checkbox" id="r" onclick="num(this.id)"></td>    <td> <h6 id="r_num"> </h6></td>
+    </tr>
+    <tr>
+        <td>
+    <input type=button value="transform" onclick="refresh()">
+    </td></tr>
+    
+    </table>
+    
+    
+    <canvas id="canvas" width="500" height="500" style="border: 1px solid black"></canvas>
+    
+    
+    
+    
+    <script>
+
+    var count = 0;
+    var order = {};
+     
+    function num(id){
+        
+        if (!(''+id in order)){
+            if (Object.keys(order).length == 0){
+                var h = document.getElementById(""+id+"_num");
+                h.innerHTML = 1;
+                if (h.id == 'r'){
+                order[''+id] = R;
+               }
+               else if (h.id == 's'){
+                order[''+id] = S;
+               }
+               else{
+                order[''+id] = T;
+               }
+                count = Object.keys(order).length
+            }
+            else{
+                var h = document.getElementById(""+id+"_num");
+                h.innerHTML = count + 1;
+                if (h.id == 'r'){
+                order[''+id] = R;
+               }
+               else if (h.id == 's'){
+                order[''+id] = S;
+               }
+               else{
+                order[''+id] = T;
+               }
+                count = Object.keys(order).length
+            }
+            
+        }
+        else{
+           var h = document.getElementById(""+id+"_num");
+        
+            if (''+id in order){
+                delete order[''+id]
+                h.innerHTML = "";
+                count = Object.keys(order).lengthh;
+            }
+            count = Object.keys(order).length
+            var i = 1;
+            for(item in order){
+               var h = document.getElementById(item+"_num");
+               if (h.id == 'r'){
+                order[item] = R;
+               }
+               else if (h.id == 's'){
+                order[item] = S;
+               }
+               else{
+                order[item] = T;
+               }
+               h.innerHTML = i;
+               i++;
+            }
+            
+        }
+
+
+    }
+    
+    
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    
+    // change the transformation stack
+    // NOTICE: this affects the viewport transformation
+    context.translate(canvas.width/2, canvas.height/2);
+    context.scale(canvas.width/10, canvas.height/10);
+    context.lineWidth=0.02;
+    
+    var T, S, R; // translation, sclae and rotation matrices 
+    var g = []; // array containing the geometry vertices 
+    
+    
+    refresh();
+    
+    function initialize_empty_js_matrices() {
+        T = [];
+        S = [];
+        R = [];
+    }
+    
+    
+    // this function draws axes
+    function draw_axes() {
+        context.moveTo(-5, 0);
+        context.lineTo(5, 0);
+        context.stroke();
+        context.moveTo(0, -5);
+        context.lineTo(0, 5);
+        context.stroke();
+        for(var x = -5; x<=5; x+=0.5)
+        {   
+            context.moveTo(x, -0.1);
+            context.lineTo(x, 0.1);
+            context.stroke();
+            context.moveTo(-0.1, x);
+            context.lineTo(0.1, x);
+            context.stroke();
+        }   
+        context.font = "1px Times New Roman";
+        context.fillText("+x",3.5,0);
+        context.fillText("+y",0,4.5);
+    
+    } 
+    
+    
+    // this function creates the geometry
+    function create_geometry() {
+    
+        g = [];
+        // create a square
+        g.push(new Float32Array([3, 3, 1]));
+        g.push(new Float32Array([-3, 3, 1]));
+        g.push(new Float32Array([-3, -2, 1]));
+        g.push(new Float32Array([3, -2, 1]));
+    
+        // roof
+        g.push(new Float32Array([-3, -2, 1]));
+        g.push(new Float32Array([0, -4.5, 1]));
+        g.push(new Float32Array([3, -2, 1]));
+    
+        // create a 36 point ellipse
+        for(var i = 0; i<36;i ++ )
+        {   
+            g.push(new Float32Array([Math.cos(i*10*Math.PI/180.0),1+1.5*Math.sin(i*10*Math.PI/180.0), 1]));
+        }   
+    }
+    
+    
+    
+    // this function draws the geometry
+    function draw_geometry() {
+        //first 4 points define a square
+        context.moveTo(g[0][0], g[0][1]);
+        for(var i = 1; i<6; i++)
+        {
+            context.lineTo(g[i][0], g[i][1]);
+            context.moveTo(g[i][0], g[i][1]);
+        }   
+        context.lineTo(g[3][0], g[3][1]);
+        context.moveTo(g[3][0], g[3][1]);
+        context.lineTo(g[0][0], g[0][1]);
+        context.stroke();
+    
+        // rest of g are the ellipse vertices 
+        context.moveTo(g[7][0], g[7][1]);
+        for(var i = 7; i<g.length; i++)
+        {
+            context.lineTo(g[i][0], g[i][1]);
+            context.moveTo(g[i][0], g[i][1]);
+        }   
+        context.moveTo(g[7][0], g[7][1]);
+        context.lineTo(g[g.length-1][0], g[g.length-1][1]);
+        context.stroke();
+    }
+    
+    
+    
+    
+    //////////////////////////////////////////////////////////////////////////////////
+    ////////// begin here ////////////////////////////////////////////////////////////
+    
+    
+    // this is the matrix multiply function from assignment 1
+    function multiply(A, B) {
+            //TODO: write this function, returns C = AxB 
+
+            // find the sizes of matrices A, and B (they could be vectors)
+            // assign the sizes to r1, c1, r2, c2
+
+            r1 = A.length;
+            c1 = A[0].length;
+
+            r2 = B.length;
+            c2 = B[0].length;
+
+
+            // if the matrices are not comformable, output an alert and return
+            if (c1 != r2){
+                alert('sizes are not compatitble.');
+                return;
+            }
+
+            // compute the size of the output matrix, assign to r3 and c3
+            r3 = r1;
+            c3 = c2;
+            // create the new matrix C 
+            C = [];
+            for(var i = 0; i<r3; i++){   
+                C[i] = []
+                for(var j = 0; j < c3; j++){
+                    C[i][j] = 0;
+                }  
+            }
+            // compute C 
+
+            for(var r = 0; r < r3; r++){
+                for(var c = 0; c < c3; c++){
+                    for(var k = 0; k < r3; k++){
+                        C[r][c] += A[r][k]*B[k][c];
+                    }
+                }
+            }
+
+        return C;
+    }
+    
+    
+    
+    // this function reads the HTML input boxes and creates (populates) 
+    // matrices T, S, and R. Keep in mind that these have to 
+    // work with your multiply() function 
+    function create_matrices_from_HTML() {
+        //first the translation
+        initialize_empty_js_matrices();
+        // parse the parameters from HTML input boxes
+
+        var tx = document.getElementById('tx');
+        var ty = document.getElementById('ty');
+        var sx = document.getElementById('sx');
+        var sy = document.getElementById('sy');
+        var theta = document.getElementById('theta');
+    
+        // create and populate T, S and R 
+        R = [[Math.cos(parseFloat(theta.value)), (-1.0 * Math.sin(parseFloat(theta.value))), 0],[Math.sin(parseFloat(theta.value)), Math.cos(parseFloat(theta.value)), 0], [0,0,1]];
+
+        S = [[parseFloat(sx.value),0,0],[0,parseFloat(sy.value), 0], [0,0,1]];
+
+        T = [[1, 0, parseFloat(tx.value)], [0, 1, parseFloat(ty.value)], [0,0,1]];
+        
+    
+    }
+    
+    // this function applies the transformations (R, S and T, in that order)
+    // on all vertices stored in g
+    function apply_transforms() {
+        // for all vertices in g, apply the transformations
+
+        var key_arr = Object.keys(order);
+
+        if (key_arr.length < 3){
+            for(var i in g){
+                new_g = multiply(R,[[g[i][0]], [g[i][1]], [g[i][2]]]);
+                g[i][0] = new_g[0][0];
+                g[i][1] = new_g[1][0];
+                g[i][2] = new_g[2][0];
+
+                new_g2 = multiply(S,[[g[i][0]], [g[i][1]], [g[i][2]]]);
+                g[i][0] = new_g2[0][0];
+                g[i][1] = new_g2[1][0];
+                g[i][2] = new_g2[2][0];
+
+                new_g3 = multiply(T,[[g[i][0]], [g[i][1]], [g[i][2]]]);
+                g[i][0] = new_g3[0][0];
+                g[i][1] = new_g3[1][0];
+                g[i][2] = new_g3[2][0];
+            }
+        }
+        else{
+            for(var i in g){
+
+                new_g = multiply(order[key_arr[0]],[[g[i][0]], [g[i][1]], [g[i][2]]]);
+                g[i][0] = new_g[0][0];
+                g[i][1] = new_g[1][0];
+                g[i][2] = new_g[2][0];
+
+                new_g2 = multiply(order[key_arr[1]],[[g[i][0]], [g[i][1]], [g[i][2]]]);
+                g[i][0] = new_g2[0][0];
+                g[i][1] = new_g2[1][0];
+                g[i][2] = new_g2[2][0];
+
+                new_g3 = multiply(order[key_arr[2]],[[g[i][0]], [g[i][1]], [g[i][2]]]);
+                g[i][0] = new_g3[0][0];
+                g[i][1] = new_g3[1][0];
+                g[i][2] = new_g3[2][0];
+            }
+        }
+
+
+
+    }
+    
+    //////////////////////////////////////////////////////////////////////////////////
+    ////////// end here //////////////////////////////////////////////////////////////
+    
+    
+    
+    
+    // this function is called at start-up and when the user clicks "transform"
+    function refresh() {
+        create_matrices_from_HTML();
+    
+        context.beginPath();
+        context.fillStyle = "#ff0000";
+        context.clearRect(-5, -5, 10, 10);
+        context.fill();
+        context.closePath();
+    
+        draw_axes();
+        create_geometry();
+        apply_transforms();
+        draw_geometry();
+        
+    }
+    
+    
+    
+    
+    </script>
+    
+    
+    
+    </body>
+    
+    </html>
+    
