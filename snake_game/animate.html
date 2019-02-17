@@ -1,0 +1,56 @@
+<HTML>
+    <meta charset="utf-8"/>
+    <head></head>
+    
+    <body>
+    
+    <canvas id="canvas" width="500" height="500" style="border: 1px solid black"></canvas>
+    
+    <script>
+    
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+      
+    context.translate(250, 250);
+    
+    var frame = 0;
+    
+    function doFrame() {
+    
+        context.clearRect(-canvas.width/2, -canvas.height/2, canvas.width, canvas.height)
+    
+        frame = frame + 1;
+        
+        var radius = 150;
+    
+        var x = radius * Math.cos(frame*3.14/180.0);
+        var y = radius * Math.sin(frame*3.14/180.0);
+    
+        context.beginPath();
+        context.fillStyle="#FF0000";
+        context.fillRect(x, y, 30, 30);
+        context.lineWidth = 2;
+        context.fill();
+    
+        requestAnimationFrame(doFrame);
+    }
+    
+    
+    
+    
+    if (!window.requestAnimationFrame) { // This is for Internet Explorer 9
+        window.requestAnimationFrame = function(callback) {
+            setTimeout(callback, 1000/60);    
+        }
+    }
+    requestAnimationFrame(doFrame);
+    
+     
+    
+    </script>
+    
+    
+    </body>
+    
+    </html>
+    

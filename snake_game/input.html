@@ -1,0 +1,66 @@
+<HTML>
+    <meta charset="utf-8"/>
+    <head></head>
+    
+    <body>
+    
+    <canvas id="canvas" width="500" height="500" style="border: 1px solid black"></canvas>
+    
+    <script>
+    
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+      
+    var image, allLoaded = false;
+    
+    
+    init();
+    
+    function imageLoaded() {
+        allLoaded = true;
+    }
+    
+    function doKeyDown(evt) {
+            var code = evt.keyCode;  // Numerical code for key that was pressed.
+            switch (code) {
+            case 13:  // enter key
+                context.drawImage(image, canvas.width/2-50, canvas.height/2-50, 100, 100);
+            case 37:  // left arrow key
+                break;
+            case 39:  // right arrow key
+                break;
+            case 38:  // up arrow key
+                break;
+            case 40:  // down arrow key
+                break;
+            }
+        }
+        
+    
+    
+    function init() {
+        canvas = document.getElementById("canvas");
+        graphics = canvas.getContext("2d");
+    
+    
+        image = new Image();   // using optional size for image
+        image.src = 'https://openclipart.org/image/2400px/svg_to_png/243661/1457652300.png';
+        image.onload = imageLoaded();
+        while(!allLoaded) { }; // CRITICAL PART: indefinite loop to wait until browswer loads the image 
+    
+    
+        //only draw image on keydown event
+        
+        document.addEventListener("keydown", doKeyDown, false);
+        
+    }
+     
+    
+    </script>
+    
+    <p id='output'></p>
+    
+    </body>
+    
+    </html>
+    
