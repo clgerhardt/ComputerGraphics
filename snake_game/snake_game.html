@@ -19,12 +19,14 @@
         background-color: #DDDDDD;
     }
     canvas {
+        padding-left: 0;
+        padding-right: 0;
+        margin-left: auto;
+        margin-right: auto;
         background-color: white;
         display: block;
-    }
-    #canvasholder {
-        border:2px solid black;
-        float: left; /* This makes the border exactly fit the canvas. */
+        border: 2px solid black;
+        
     }
 </style>
 <script>
@@ -37,7 +39,7 @@
     var elapsedTimeMillis;  // This will be the time since the animation started;
                             // will be zero in the first frame.
 
-    var image, allLoaded = false;
+    var image, image2, image3, allLoaded = false;
 
     var frameNumber;
     var elapsedTimeMillis;
@@ -45,39 +47,35 @@
     
     var x,y;
 
-    var current_dir;
+    var dx;
+    var dy;
+
+    var snake_body;
+
+    var food;
+    var score;
 
 
 
     function draw() {
-        // context.clearRect(-x, -y, canvas.width, canvas.height)
 
-
-		// frameNumber++;
         graphics.beginPath();
-        graphics.fillStyle="#FF0000";
-        graphics.fillRect(x, y, 20, 20);
-        graphics.lineWidth = 1;
-        graphics.fill();
-        
+        graphics.drawImage(image2,food.x, food.y, 20 , 20);
 
-        // requestAnimationFrame(doFrame);
-        // graphics.clearRect(x,y,canvas.width,canvas.height);  // Clear the canvas, so it shows its background color.
-        if (current_dir == 1){
-            graphics.clearRect(x+20,y,20,20);    
+        for(var i in snake_body){
+            if (i == 0){
+                graphics.beginPath();
+                graphics.drawImage(image,snake_body[i].x, snake_body[i].y, 20 , 20);
+            }
+            else{
+                graphics.beginPath();
+                graphics.fillStyle="#000000";
+                graphics.fillRect(snake_body[i].x, snake_body[i].y, 19, 19);
+                graphics.lineWidth = 1;
+                graphics.fill();
+            }
         }
-        else if(current_dir == 2){
-            graphics.clearRect(x-20,y,20,20);    
-        }
-        else if(current_dir == 3){
-            graphics.clearRect(x,y+20,20,20);    
 
-        }
-        else if(current_dir == 4){
-            graphics.clearRect(x,y-20,20,20);    
-
-        }
-        // graphics.clearRect(x-20,y,20,20);
     } // end of draw()
     
     
@@ -86,20 +84,32 @@
         var code = evt.keyCode;  // Numerical code for key that was pressed.
         switch (code) {
 		case 37:  // left arrow key
-        console.log('left')
-        current_dir = 1;
+        if (dx > 0){
+            break;
+        }
+        dx = - 20;
+        dy = 0;
 		    break;
 		case 39:  // right arrow key
-        console.log('right')
-        current_dir = 2;
+        if(dx < 0){
+            break;
+        }
+        dx = 20;
+        dy = 0;
 		    break;
 		case 38:  // up arrow key
-        console.log('up')
-        current_dir = 3;
+        if(dy > 0){
+            break;
+        }
+        dx = 0;
+        dy = - 20;
 		    break;
 		case 40:  // down arrow key
-        console.log('down')
-        current_dir = 4;
+        if(dy < 0){
+            break;
+        }
+        dx = 0;
+        dy = 20;
 		    break;
         }
     }
@@ -113,38 +123,93 @@
         frameNumber++;
         elapsedTimeMillis = Date.now() - startTime;
 
-        if(frameNumber % 10 == 0){
-            if (current_dir == 1){
-                x -= 20;
-                draw()
+        if(frameNumber % 8 == 0){
+            graphics.clearRect(0,0,canvas.width,canvas.height);  // Clear the canvas, so it shows its background color.
+            var head = snake_body[0];
+            snake_body.unshift({'x': head.x + dx, 'y': head.y + dy})
+
+            if (snake_body[0].x == food.x && snake_body[0].y == food.y){
+                var score_para = document.getElementById('score');
+                score += 10;
+                score_para.innerText = 'Score: ' + score; 
+
+                var onSnake = true;
+                var x, y;
+                while(onSnake){
+                    x = Math.floor((Math.random()*(780 - 20)+ 20)/20)*20
+                    y = Math.floor((Math.random()*(580 - 20)+ 20)/20)*20
+                    var count = 0;
+                    for(var i = 0; i < snake_body.length; i++){
+                        if(x == snake_body[i].x && y == snake_body[i].y){
+                            count++;
+                        }
+                    }
+                    if (count == 0){
+                        onSnake = false;
+                    }
+                }
+                food.x = x;
+                food.y = y;
+            }else{
+                snake_body.pop()
             }
-            else if(current_dir == 2){
-                x += 20;
-                draw()
+            draw()
+
+            for(var i = 1; i < snake_body.length; i++){
+                if(snake_body[0].x == snake_body[i].x && snake_body[0].y == snake_body[i].y){
+                    graphics.clearRect(0,0,canvas.width,canvas.height);
+                    graphics.drawImage(image3,0, 0, 800 , 600);
+                    return;
+                }
             }
-            else if(current_dir == 3){
-                y -= 20;
-                draw()
+
+            if (dx > 0){
+                var head = snake_body[0];
+                if (head.x > canvas.width - 15){
+                    graphics.clearRect(0,0,canvas.width,canvas.height);
+                    graphics.drawImage(image3,0, 0, 800 , 600);
+                    return;
+                }
+            }
+            else if ( dx < 0){
+                var head = snake_body[0];
+
+                if(head.x < 0){
+                    graphics.clearRect(0,0,canvas.width,canvas.height);
+                    graphics.drawImage(image3,0, 0, 800 , 600);
+                    return;
+                }
+            }
+            else if (dy > 0){
+                var head = snake_body[0];
+
+                if(head.y > canvas.height - 15){
+                    graphics.clearRect(0,0,canvas.width,canvas.height);
+                    graphics.drawImage(image3,0, 0, 800 , 600);
+                    return;
+                }
+            }
+            else if(dy < 0){
+                var head = snake_body[0];
+
+                if(head.y < 0){
+                    graphics.clearRect(0,0,canvas.width,canvas.height);
+                    graphics.drawImage(image3,0, 0, 800 , 600);
+                    return;
+                }
 
             }
-            else if(current_dir == 4){
-                y += 20;
-                draw()
-            }
+
         }
-
-		// GAME LOGIC here
-        // draw()
-
         requestAnimationFrame(doFrame);
+
+
     }
     
 
     function imageLoaded() {
 		allLoaded = true;
     }
-
-
 
 	// this function gets called when HTML page loads
 	// canvas context gets initialized
@@ -155,6 +220,7 @@
         try {
             canvas = document.getElementById("canvas");
             graphics = canvas.getContext("2d");
+
         } catch(e) {
             document.getElementById("canvasholder").innerHTML =
                "Canvas graphics is not supported.<br>" +
@@ -162,17 +228,45 @@
         }
 
 		image = new Image(60, 45);   // using optional size for image
+        image2 = new Image(60, 45);   // using optional size for image
+        image3 = new Image(60, 45);   // using optional size for image
+
 		// load an image of intrinsic size 300x227 in CSS pixels
-		image.src = 'https://openclipart.org/image/2400px/svg_to_png/243661/1457652300.png';
+        image2.src = 'https://cdn4.vectorstock.com/i/1000x1000/10/88/pixel-an-apple-vector-19281088.jpg';
+		image.src = 'https://img11.androidappsapk.co/300/0/a/8/com.ungraphicsgames.snake8bit.png';
+
+        image3.src = 'https://res.cloudinary.com/teepublic/image/private/s--NLcTrgMZ--/t_Preview/b_rgb:191919,c_lpad,f_jpg,h_630,q_90,w_1200/v1466191557/production/designs/549487_1.jpg';
 		image.onload = imageLoaded();
+        image2.onload = imageLoaded();
+        image3.onload = imageLoaded();
+
+        // image.setAttribute('style', 'transform: rotate(180deg)');
+
+        dx = 20
+        dy = 0;
+        score = 0;
+
+        snake_body = [
+            {'x': 400, 'y': 300},
+            {'x': 380, 'y': 300},
+            {'x': 360, 'y': 300},
+            {'x': 340, 'y': 300},
+        ];
+
+        food = {'x': 260, 'y': 160};
+
+        var score_para = document.getElementById('score');
+        score_para.innerText = 'Score: ' + score;
+
+
 		while(!allLoaded) { } // very risky 
+
+
 
 		// GAME INIT 
 
 		// handle keyboard
         document.addEventListener("keydown", doKeyDown, false);
-        x = 400; y = 300;
-
         frameNumber = 0;
         elapsedTimeMillis = 0;
         startTime = Date.now();  // current time, in milliseconds.
@@ -184,13 +278,19 @@
         }
         requestAnimationFrame(doFrame);
     }
+
+
     
 </script>
 </head>
-<body onload="init()"> <!-- the onload attribute here is what calls the init() function -->
+<body> <!-- the onload attribute here is what calls the init() function -->
 
-<h2>Snake</h2>
+<h2>Snake: Use arrow keys to play.</h2>
 <p id='score'></p>
+
+<button onclick="init()">
+        Start Game
+</button>
 <noscript>
     <!-- This message will be shown in the page if JavaScript is not available. -->
 <p>JavaScript is required to use this page.</p>
@@ -202,6 +302,9 @@
 Canvas not supported.
 </canvas>
 </div>
+<!-- https://downloads.khinsider.com/game-soundtracks/album/god-of-war-original-soundtrack/22%2520zeus%2527%2520wrath%2520divine.mp3 -->
+
+
 
 </body>
 </html>
