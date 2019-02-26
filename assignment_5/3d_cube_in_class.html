@@ -1,0 +1,322 @@
+
+<HTML>
+    <meta charset="utf-8"/>
+    <head></head>
+    
+    <body>
+    
+    <canvas id="canvas" width="500" height="500" style="border: 1px solid black" backgroundcolor=#000000></canvas>
+    <p>Focal length: 0.1 <input type="range" id="myslider" min="0.1" max="2" value="1" step=0.01 class="slider" id="myRange">2</p>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.18.0/math.min.js"></script>
+    <script>
+    "use strict"; 
+    
+    var NRSTARS = 200;
+    
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    context.fillStyle = '#000000';
+    var width = canvas.width;
+    var height = canvas.height;
+    
+    var globalAngle = 0;
+    
+    
+    applyWindowToViewportTransformation(-1,1,-1,1,true);
+        /**	Textbook function
+         *
+         * Sets up a transformation in the graphics context so that the canvas will
+         * show x-values in the range from left to right, and y-values in the range
+         * from bottom to top.  If preserveAspect is true, then one of the ranges
+         * will be increased, if necessary, to account for the aspect ratio of the
+         * canvas.  This function sets the global variable pixelsize to be the
+         * size of a pixel in the new coordinate system.  (If preseverAspect is
+         * true, pixelSize is the maximum of its horizontal and vertical sizes.)
+         */
+        function applyWindowToViewportTransformation(left,right,bottom,top,preserveAspect) {
+            var displayAspect, windowAspect;
+            var excess;
+            if (preserveAspect) {
+                // Adjust the limits to match the aspect ratio of the drawing area.
+                displayAspect = Math.abs(canvas.height / canvas.width);
+                windowAspect = Math.abs(( top-bottom ) / ( right-left ));
+                if (displayAspect > windowAspect) {
+                    // Expand the viewport vertically.
+                    excess = (top-bottom) * (displayAspect/windowAspect - 1)
+                    top = top + excess/2
+                    bottom = bottom - excess/2
+                }
+                else if (displayAspect < windowAspect) {
+                    // Expand the viewport vertically.
+                    excess = (right-left) * (windowAspect/displayAspect - 1)
+                    right = right + excess/2
+                    left = left - excess/2	
+                }
+            }
+            context.scale( canvas.width / (right-left), canvas.height / (bottom-top) )
+            context.translate( -left, -top );
+        }  // end of applyWindowToViewportTransformation()
+    
+    function perspective ( f ) {
+    
+        var result = new Array();
+        for(var i = 0;i<4; i++) 
+            result[i] = new Array();
+        for(var i = 0; i<4; i++) for(var j = 0; j<4; j++) result[i][j] = 0;
+    
+        // create matrix here by populating result	
+        result [0][0] =  1;
+        result [1][1] =  1;
+        result [2][2] =  1;
+        result [3][2] =  1/f;
+    
+        var res = math.matrix(result)
+        return res ;
+    }
+    
+    function translate( tx, ty, tz ) {
+        var result = new Array();
+        for(var i = 0;i<4; i++) 
+            result[i] = new Array();
+        for(var i = 0; i<4; i++) for(var j = 0; j<4; j++) result[i][j] = 0;
+        
+        // create matrix here by populating result	
+        result [0][0] =  1;
+        result [1][1] =  1;
+        result [2][2] =  1;
+        result [3][3] =  1;
+    
+        result [0][3] =  tx;
+        result [1][3] =  ty;
+        result [2][3] =  tz;
+    
+    
+        var res = math.matrix(result) // this uses mathjs 
+        return res ;
+    }
+    
+    function rotateX( angle ) {
+        var a = angle * 3.1415 / 180.0;
+        var result = new Array();
+        for(var i = 0;i<4; i++) 
+            result[i] = new Array();
+        for(var i = 0; i<4; i++) for(var j = 0; j<4; j++) result[i][j] = 0;
+        
+        // create matrix here by populating result	
+        result [0][0] =  1;
+        result [1][1] =  1;
+        result [2][2] =  1;
+        result [3][3] =  1;
+    
+        result [1][1] = Math.cos(a);
+        result [2][2] = Math.cos(a);
+        result [2][1] = -Math.sin(a);
+        result [1][2] = Math.sin(a);
+    
+    
+        var res = math.matrix(result) // this uses mathjs 
+        return res ;
+    }
+    
+    function rotateY( angle ) {
+        var a = angle * 3.1415 / 180.0;
+        var result = new Array();
+        for(var i = 0;i<4; i++) 
+            result[i] = new Array();
+        for(var i = 0; i<4; i++) for(var j = 0; j<4; j++) result[i][j] = 0;
+        
+        // create matrix here by populating result	
+        result [0][0] =  1;
+        result [1][1] =  1;
+        result [2][2] =  1;
+        result [3][3] =  1;
+    
+        result [0][0] = Math.cos(a);
+        result [2][2] = Math.cos(a);
+        result [2][0] = -Math.sin(a);
+        result [0][2] = Math.sin(a);
+    
+    
+        var res = math.matrix(result) // this uses mathjs 
+        return res ;
+    }
+    // create array of object positions
+    init();
+    var r;
+    var cube, T, P;
+    
+    function init() {
+    
+    
+        //create perspective projection matrix
+        P = perspective(2);
+        T = translate(0, 0, 6);
+    
+    
+        cube = new Array();
+        for(var i = 0; i<NRSTARS; i++) 
+        {
+            var location = math.matrix([(Math.random() * 2 - 1) * 40, (Math.random() * 2 - 1)*40, Math.random() * 255, 1]); // each location is a 4x1 vertex
+            cube.push(location);
+        }
+        // cube.push(math.matrix([-1, -1, 1, 1]));
+        // cube.push(math.matrix([1, -1, 1, 1]));
+        // cube.push(math.matrix([-1, -1, -1, 1]));
+        // cube.push(math.matrix([1, -1, -1, 1]));
+    
+        // cube.push(math.matrix([-1, 1, 1, 1]));
+        // cube.push(math.matrix([1, 1, 1, 1]));
+        // cube.push(math.matrix([-1, 1, -1, 1]));
+        // cube.push(math.matrix([1, 1, -1, 1]));
+    
+    
+        document.addEventListener("keydown", doKeyDown, false);
+        document.addEventListener("keyup", doKeyUp, false);
+    
+        document.getElementById('myslider').oninput = function() {
+            var newFocal = this.value; // TODO: implement logic that updates the projection matrix
+            P = perspective(newFocal);
+        }
+    
+        // start clock
+        if (!window.requestAnimationFrame) { // This is for Internet Explorer 9
+            window.requestAnimationFrame = function(callback) {
+                    setTimeout(callback, 1000/60);    
+            }
+        }
+        requestAnimationFrame(display);
+        display();
+    }
+    
+    
+    function doKeyUp(evt) {
+    }
+    
+    function doKeyDown(evt) {
+            var code = evt.keyCode;  // Numerical code for key that was pressed.
+            switch (code) {
+            case 37:  // left arrow key
+                break;
+            case 39:  // right arrow key
+                break;
+            case 38:  // up arrow key
+                break;
+            case 40:  // down arrow key
+                break;
+            default:
+                break;
+            }
+    }
+        
+    
+    
+    function rgbToHex(r, g, b) {
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+    
+    // this function plots a "star" in 2d and adjusts the color
+    // using the depth 
+    function draw_cube(t) {
+        
+        context.fillStyle = "#00000";
+        
+        var red = 255; //TODO: adjust red as a function of depth (closer stars are brighter) 
+    
+
+        context.beginPath();
+        context.strokeStyle = rgbToHex(red, 0, 0);
+        context.lineWidth = 0.004;
+    
+        context.moveTo(t[0].subset(math.index(0)), t[0].subset(math.index(1)));
+        context.lineTo(t[1].subset(math.index(0)), t[1].subset(math.index(1)));
+    
+        // context.moveTo(t[1].subset(math.index(0)), t[1].subset(math.index(1)));
+        // context.lineTo(t[3].subset(math.index(0)), t[3].subset(math.index(1)));
+    
+        // context.moveTo(t[3].subset(math.index(0)), t[3].subset(math.index(1)));
+        // context.lineTo(t[2].subset(math.index(0)), t[2].subset(math.index(1)));
+    
+        // context.moveTo(t[2].subset(math.index(0)), t[2].subset(math.index(1)));
+        // context.lineTo(t[0].subset(math.index(0)), t[0].subset(math.index(1)));
+    
+    
+        // context.moveTo(t[4].subset(math.index(0)), t[4].subset(math.index(1)));
+        // context.lineTo(t[5].subset(math.index(0)), t[5].subset(math.index(1)));
+    
+        // context.moveTo(t[5].subset(math.index(0)), t[5].subset(math.index(1)));
+        // context.lineTo(t[7].subset(math.index(0)), t[7].subset(math.index(1)));
+    
+        // context.moveTo(t[7].subset(math.index(0)), t[7].subset(math.index(1)));
+        // context.lineTo(t[6].subset(math.index(0)), t[6].subset(math.index(1)));
+    
+        // context.moveTo(t[6].subset(math.index(0)), t[6].subset(math.index(1)));
+        // context.lineTo(t[4].subset(math.index(0)), t[4].subset(math.index(1)));
+    
+    
+        // context.moveTo(t[0].subset(math.index(0)), t[0].subset(math.index(1)));
+        // context.lineTo(t[4].subset(math.index(0)), t[4].subset(math.index(1)));
+    
+        // context.moveTo(t[1].subset(math.index(0)), t[1].subset(math.index(1)));
+        // context.lineTo(t[5].subset(math.index(0)), t[5].subset(math.index(1)));
+    
+        // context.moveTo(t[2].subset(math.index(0)), t[2].subset(math.index(1)));
+        // context.lineTo(t[6].subset(math.index(0)), t[6].subset(math.index(1)));
+    
+        // context.moveTo(t[3].subset(math.index(0)), t[3].subset(math.index(1)));
+        // context.lineTo(t[7].subset(math.index(0)), t[7].subset(math.index(1)));
+    
+        // console.log(t[2].subset(math.index(0)));
+    
+        context.closePath();	
+        context.stroke();
+    }
+    
+    
+    
+    // game loop function 
+    function display()
+    {
+        
+        context.fillRect(-1,-1,2,2); // clear the viewport
+    
+    
+        globalAngle += 1;
+
+        var R = rotateY(globalAngle);
+        var R1 = rotateX(globalAngle);
+    
+        var t = new Array();
+    
+        for(var i = 0; i<8; i++) {
+            var tP = cube[i];
+            // rotation transforms 
+            tP = math.multiply(R, tP);
+            tP = math.multiply(R1, tP);
+            // translation transform 
+            tP = math.multiply(T, tP);
+            // perspective transform 
+            tP = math.multiply(P, tP);
+            // normalize by w 
+
+            console.log(tP.subset(math.index([0, 1, 2])), tP.subset(math.index([3]))) 
+            // tP = math.divide(tP.subset(math.index([0, 1, 2])), tP.subset(math.index([3])));
+            t.push(tP);
+    
+        }
+        draw_cube(t);
+    
+    
+    
+        requestAnimationFrame(display);
+    }
+    
+    
+    
+      
+    
+    </script>
+    
+    </body>
+    
+    </html>
+    
