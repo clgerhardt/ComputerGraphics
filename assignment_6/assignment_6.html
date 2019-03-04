@@ -1,0 +1,314 @@
+
+<HTML>
+    <meta charset="utf-8"/>
+    <head></head>
+    
+    <body>
+    
+    <canvas id="canvas" width="500" height="500" style="border: 1px solid black" backgroundcolor=#000000></canvas>
+    <p>Focal length: 0.1 <input type="range" id="myslider" min="0.1" max="2" value="1" step=0.01 class="slider" id="myRange">2</p>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/3.18.0/math.min.js"></script>
+    <script>
+    "use strict"; 
+    
+    var NRSTARS = 200;
+    
+    var canvas = document.getElementById("canvas");
+    var context = canvas.getContext("2d");
+    context.fillStyle = '#000000';
+    var width = canvas.width;
+    var height = canvas.height;
+    
+    var globalAngle = 0;
+    
+    applyWindowToViewportTransformation(-1,1,1,-1,true);
+        /**	Textbook function
+         *
+         * Sets up a transformation in the graphics context so that the canvas will
+         * show x-values in the range from left to right, and y-values in the range
+         * from bottom to top.  If preserveAspect is true, then one of the ranges
+         * will be increased, if necessary, to account for the aspect ratio of the
+         * canvas.  This function sets the global variable pixelsize to be the
+         * size of a pixel in the new coordinate system.  (If preseverAspect is
+         * true, pixelSize is the maximum of its horizontal and vertical sizes.)
+         */
+        function applyWindowToViewportTransformation(left,right,bottom,top,preserveAspect) {
+            var displayAspect, windowAspect;
+            var excess;
+            if (preserveAspect) {
+                // Adjust the limits to match the aspect ratio of the drawing area.
+                displayAspect = Math.abs(canvas.height / canvas.width);
+                windowAspect = Math.abs(( top-bottom ) / ( right-left ));
+                if (displayAspect > windowAspect) {
+                    // Expand the viewport vertically.
+                    excess = (top-bottom) * (displayAspect/windowAspect - 1)
+                    top = top + excess/2
+                    bottom = bottom - excess/2
+                }
+                else if (displayAspect < windowAspect) {
+                    // Expand the viewport vertically.
+                    excess = (right-left) * (windowAspect/displayAspect - 1)
+                    right = right + excess/2
+                    left = left - excess/2	
+                }
+            }
+            context.scale( canvas.width / (right-left), canvas.height / (bottom-top) )
+            context.translate( -left, -top );
+        }  // end of applyWindowToViewportTransformation()
+    
+    function perspective ( f) {
+        var result = new Array();
+        for(var i = 0;i<4; i++) 
+            result[i] = new Array();
+        for(var i = 0; i<4; i++) for(var j = 0; j<4; j++) result[i][j] = 0;
+    
+        // var f = 1 / (Math.tan(field_of_view/2));
+        // var d = far - near;
+        // create simple perspective matrix here by populating result
+        result [0][0] =  1;
+        result [1][1] =  1;
+        result [2][2] =  1;
+        result [3][2] =  1/f*20;	
+    
+        var res = math.matrix(result)
+        return res ;
+    }
+    
+    function rotateZ( angle ) {
+        var a =  angle * Math.PI / 180.0 ;
+        var result = new Array();
+        for(var i = 0;i<4; i++) 
+            result[i] = new Array();
+        for(var i = 0; i<4; i++) for(var j = 0; j<4; j++) result[i][j] = 0;
+        
+        // create rotation around Z axis 
+        result[0][0] = Math.cos(angle);
+        result[0][1] = -Math.sin(angle);
+        result[1][0] = Math.sin(angle);
+        result[1][1] = Math.cos(angle);
+        result[2][2] = 1;
+        result[3][3] = 1;
+
+        var res = math.matrix(result) // this uses mathjs 
+
+        return res ;
+    }
+
+    function translate( tx, ty, tz ) {
+        var result = new Array();
+        for(var i = 0;i<4; i++) 
+            result[i] = new Array();
+        for(var i = 0; i<4; i++) for(var j = 0; j<4; j++) result[i][j] = 0;
+        
+        // create matrix here by populating result	
+        result [0][0] =  1;
+        result [1][1] =  1;
+        result [2][2] =  1;
+        result [3][3] =  1;
+    
+        result [0][3] =  tx;
+        result [1][3] =  ty;
+        result [2][3] =  tz;
+    
+        var res = math.matrix(result) // this uses mathjs 
+        return res ;
+    }
+    
+    function imageLoaded() {
+		allLoaded = true;
+    }
+    
+    // create array of object positions
+    init();
+    var r;
+    var objects, T, P, rotation, move_x, move_z, frame, house_image;
+    var allLoaded = false;
+
+    var z = 20;
+    var scale = 1/z;
+    var x = 2;
+    // var y  = 2;
+
+    var displayX = x/z;
+    var displayY = 0;
+    
+    function init() {
+    
+    
+        //create perspective projection matrix
+        P = perspective(2);
+        T = translate(0, 0, .1);
+        // new_angle = 0;
+        frame = 0;
+        house_image = new Image(60, 45);
+
+        house_image.src = 'house.png';
+
+        house_image.onload = imageLoaded();
+
+        //create objects
+        objects = new Array();
+        for(var i = 0; i<NRSTARS; i++) 
+        {
+            var location = math.matrix([(Math.random() * 2 - 1) * 40, (Math.random() * 2 - 1)*40, Math.random() * 255, 1]); // each location is a 4x1 vertex
+            objects.push(location);
+        }
+        
+        document.addEventListener("keydown", doKeyDown, false);
+        document.addEventListener("keyup", doKeyUp, false);
+    
+        document.getElementById('myslider').oninput = function() {
+            var newFocal = this.value; // TODO: implement logic that updates the projection matrix
+            P = perspective(newFocal);
+        }
+    
+        // start clock
+        if (!window.requestAnimationFrame) { // This is for Internet Explorer 9
+            window.requestAnimationFrame = function(callback) {
+                    setTimeout(callback, 1000/60);    
+            }
+        }
+        requestAnimationFrame(display);
+        display();
+    }
+    
+    
+    function doKeyUp(evt) {
+    }
+    
+    function doKeyDown(evt) {
+            var code = evt.keyCode;  // Numerical code for key that was pressed.
+            switch (code) {
+            case 37:  // left arrow key
+                 move_x += .01;
+                break;
+            case 39:  // right arrow key
+                move_x -= .01;
+                break;
+            case 38:  // up arrow key
+                move_z += .1;
+                break;
+            case 40:  // down arrow key
+                move_z -= .1;
+            default:
+                break;
+            }
+    }
+
+    function doKeyUp(evt) {
+            var code = evt.keyCode;  // Numerical code for key that was pressed.
+            switch (code) {
+            case 37:  // left arrow key
+                move_x = 0;
+                break;
+            case 39:  // right arrow key
+                move_x = 0;
+                break;
+            case 38:  // up arrow key
+                move_z = 0;
+                break;
+            case 40:  // down arrow key
+                move_z = 0;
+                break;
+            default:
+                break;
+            }
+    }
+        
+    
+    
+    function rgbToHex(r, g, b) {
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+    
+    // this function plots a "star" in 2d and adjusts the color
+    // using the depth 
+
+
+
+
+    function setPixel(x, y, depth) {
+        // console.log(depth)
+        context.fillStyle = "#00000";
+        displayX = x/depth;
+        // displayY = y/z;
+
+        drawCustomImage(house_image, displayX, displayY, scale);
+         //TODO: adjust red as a function of depth (closer stars are brighter)
+        // var red = 255 - depth;
+        // context.beginPath();
+        // context.strokeStyle = rgbToHex(0, red, 0);
+        // context.lineWidth = 0.004;
+        // context.rect(x, y, .01, .01);
+        // context.closePath();	
+        // context.stroke();
+
+    }
+
+    function drawCustomImage(image, x , y, scale){
+         
+         var imageWidth = scale*2;
+         var imageHeight = scale*2;
+
+        context.drawImage(image, x - imageWidth/2, y - imageHeight/2, imageWidth, imageHeight)
+    }
+    
+    
+    
+    // game loop function 
+    function display()
+    {
+        
+        // if (frame %30==0){
+        context.fillRect(-1,-1,2,2); // clear the viewport
+
+
+        
+        // globalAngle += new_angle;
+
+        // var RZ = rotateZ(globalAngle);
+
+        var t = new Array();
+
+        for(var i in objects){
+            var tP = objects[i];
+            // tP._data[2] -= 2;
+            // objects[i] = math.matrix([tP._data[0], tP._data[1], tP._data[2], 1]);
+
+            // if (tP._data[2] < 1){
+            //     console.log('here')
+            //     tP._data[2] += 225; 
+            // }
+
+            // objects[i] = math.matrix([tP._data[0], tP._data[1], tP._data[2], 1]);
+
+            var new_tP = objects[i];
+            // new_tP = math.multiply(RZ, new_tP);
+            new_tP = math.multiply(P, new_tP);
+            new_tP = math.multiply(T, new_tP);
+            new_tP = math.divide(new_tP.subset(math.index([0, 1, 2])), new_tP.subset(math.index([3])));
+            
+            setPixel(new_tP._data[0], new_tP._data[1], tP._data[2]);
+
+        }
+        //return
+        // for all stars (objects), apply rotation, perspective transformation, normalize by w and draw
+        
+        // matrix multiplication to be done with Mathjs  (e.g.: tP = math.multiply(M, p), where M is a 4x4 matrix and p is a 4x1 vector
+        // }
+    
+        requestAnimationFrame(display);
+    }
+    
+    
+    //Spoke with Sean and Chase about this project! 
+    
+    
+      
+    
+    </script>
+    
+    </body>
+    
+    </html>
+    
